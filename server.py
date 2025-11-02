@@ -91,6 +91,9 @@ async def proxy_request(
         return content
 
 
-def start_proxy_server(port: int):
+def start_proxy_server(port: int, config=None):
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    if config is None:
+        config = uvicorn.Config(app, host="0.0.0.0", port=port)
+    server = uvicorn.Server(config)
+    return server
