@@ -13,7 +13,7 @@ def run(
 ):
     """Run the caching proxy server."""
     typer.echo(f"Starting caching proxy server on port {port} for origin {origin}")
-    start_proxy_server(port, origin)
+    start_proxy_server(port)
 
 @app.command()
 def clear_cache_cmd():
