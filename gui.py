@@ -6,12 +6,33 @@ import threading
 import base64
 import json
 from auth import load_users
+from ttkthemes import ThemedTk
+import os
+from datetime import datetime
 
 class ProxyGUI:
     def __init__(self):
-        self.root = tk.Tk()
-        self.root.title("Proxy Server GUI")
-        self.root.geometry("800x600")
+        self.root = ThemedTk(theme="arc")  # Modern theme
+        self.root.title("Caching Proxy Server")
+        self.root.geometry("1000x700")
+        
+        # Configure colors and styles
+        self.style = ttk.Style()
+        self.bg_color = "#f0f0f0"
+        self.accent_color = "#2196F3"
+        self.root.configure(bg=self.bg_color)
+        
+        # Configure styles
+        self.style.configure('Main.TFrame', background=self.bg_color)
+        self.style.configure('Header.TLabel', 
+                           font=('Helvetica', 16, 'bold'),
+                           padding=10,
+                           background=self.bg_color)
+        self.style.configure('Status.TLabel',
+                           font=('Helvetica', 10),
+                           padding=5,
+                           background=self.bg_color)
+        self.style.configure('URL.TEntry', padding=5)
         
         self.server_running = False
         self.server_thread = None
@@ -22,70 +43,151 @@ class ProxyGUI:
         self.start_server()
         
         # Create login frame
-        self.login_frame = ttk.Frame(self.root)
+        self.login_frame = ttk.Frame(self.root, style='Main.TFrame')
         self.setup_login_frame()
         self.login_frame.pack(fill='both', expand=True)
         
         # Create main frame (initially hidden)
-        self.main_frame = ttk.Frame(self.root)
+        self.main_frame = ttk.Frame(self.root, style='Main.TFrame')
         self.setup_main_frame()
+        
+        # Create status bar
+        self.status_bar = ttk.Label(self.root, 
+                                  text="Server Status: Starting...", 
+                                  style='Status.TLabel')
+        self.status_bar.pack(side='bottom', fill='x')
         
         # Bind window close event
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
+        # Update status bar periodically
+        self.update_status()
+        
     def setup_login_frame(self):
-        ttk.Label(self.login_frame, text="Login", font=('Arial', 20)).pack(pady=20)
+        # Center the login form
+        center_frame = ttk.Frame(self.login_frame, style='Main.TFrame')
+        center_frame.place(relx=0.5, rely=0.5, anchor='center')
+        
+        # Logo or Title
+        ttk.Label(center_frame, 
+                 text="Caching Proxy Server", 
+                 style='Header.TLabel').pack(pady=20)
+        
+        # Login form with better styling
+        form_frame = ttk.Frame(center_frame, style='Main.TFrame')
+        form_frame.pack(padx=40, pady=20)
         
         # Username
-        ttk.Label(self.login_frame, text="Username:").pack(pady=5)
+        ttk.Label(form_frame, 
+                 text="Username:", 
+                 font=('Helvetica', 10)).pack(anchor='w', pady=(0, 5))
         self.username_var = tk.StringVar()
-        ttk.Entry(self.login_frame, textvariable=self.username_var).pack(pady=5)
+        username_entry = ttk.Entry(form_frame, 
+                                 textvariable=self.username_var,
+                                 width=30,
+                                 style='URL.TEntry')
+        username_entry.pack(pady=(0, 15))
         
         # Password
-        ttk.Label(self.login_frame, text="Password:").pack(pady=5)
+        ttk.Label(form_frame, 
+                 text="Password:", 
+                 font=('Helvetica', 10)).pack(anchor='w', pady=(0, 5))
         self.password_var = tk.StringVar()
-        ttk.Entry(self.login_frame, textvariable=self.password_var, show="*").pack(pady=5)
+        password_entry = ttk.Entry(form_frame, 
+                                 textvariable=self.password_var,
+                                 show="•",
+                                 width=30,
+                                 style='URL.TEntry')
+        password_entry.pack(pady=(0, 20))
         
         # Login button
-        ttk.Button(self.login_frame, text="Login", command=self.login).pack(pady=20)
+        login_btn = ttk.Button(form_frame, 
+                              text="Login",
+                              command=self.login,
+                              style='Accent.TButton')
+        login_btn.pack(pady=10, ipadx=20, ipady=5)
+        
+        # Bind Enter key to login
+        username_entry.bind('<Return>', lambda e: password_entry.focus())
+        password_entry.bind('<Return>', lambda e: self.login())
         
     def setup_main_frame(self):
         # Notebook for tabs
+        self.style.configure('TNotebook', background=self.bg_color)
+        self.style.configure('TNotebook.Tab', padding=[12, 4], font=('Helvetica', 10))
         self.notebook = ttk.Notebook(self.main_frame)
-        self.notebook.pack(fill='both', expand=True, padx=5, pady=5)
+        self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
         
         # Proxy tab
-        proxy_frame = ttk.Frame(self.notebook)
-        self.notebook.add(proxy_frame, text='Proxy')
+        proxy_frame = ttk.Frame(self.notebook, style='Main.TFrame')
+        self.notebook.add(proxy_frame, text='🌐 Proxy')
         
-        # Server control
-        control_frame = ttk.Frame(proxy_frame)
-        control_frame.pack(fill='x', padx=10, pady=5)
+        # Header
+        ttk.Label(proxy_frame, 
+                 text="Proxy Server Control", 
+                 style='Header.TLabel').pack(pady=10)
         
-        self.server_btn = ttk.Button(control_frame, text="Start Server", 
-                                   command=self.toggle_server)
-        self.server_btn.pack(side='left', padx=5)
+        # Server control with status indicator
+        control_frame = ttk.Frame(proxy_frame, style='Main.TFrame')
+        control_frame.pack(fill='x', padx=20, pady=10)
         
-        # URL input
-        url_frame = ttk.Frame(proxy_frame)
-        url_frame.pack(fill='x', padx=10, pady=5)
+        self.server_btn = ttk.Button(control_frame, 
+                                   text="Start Server",
+                                   command=self.toggle_server,
+                                   style='Accent.TButton')
+        self.server_btn.pack(side='left', padx=5, ipadx=10, ipady=2)
         
-        ttk.Label(url_frame, text="URL:").pack(side='left', padx=5)
+        self.server_status = ttk.Label(control_frame,
+                                     text="●",
+                                     foreground='gray',
+                                     font=('Helvetica', 16),
+                                     style='Status.TLabel')
+        self.server_status.pack(side='left', padx=5)
+        
+        # URL input with modern styling
+        url_frame = ttk.Frame(proxy_frame, style='Main.TFrame')
+        url_frame.pack(fill='x', padx=20, pady=10)
+        
+        ttk.Label(url_frame, 
+                 text="URL:", 
+                 font=('Helvetica', 10)).pack(side='left', padx=5)
         self.url_var = tk.StringVar()
-        ttk.Entry(url_frame, textvariable=self.url_var).pack(side='left', 
-                                                            fill='x', expand=True, padx=5)
-        ttk.Button(url_frame, text="Send Request", 
-                  command=self.send_request).pack(side='left', padx=5)
+        url_entry = ttk.Entry(url_frame, 
+                            textvariable=self.url_var,
+                            style='URL.TEntry')
+        url_entry.pack(side='left', fill='x', expand=True, padx=5)
         
-        # Response area
-        ttk.Label(proxy_frame, text="Response:").pack(anchor='w', padx=10, pady=5)
-        self.response_area = scrolledtext.ScrolledText(proxy_frame, height=20)
-        self.response_area.pack(fill='both', expand=True, padx=10, pady=5)
+        send_btn = ttk.Button(url_frame, 
+                            text="Send Request",
+                            command=self.send_request,
+                            style='Accent.TButton')
+        send_btn.pack(side='left', padx=5, ipadx=10, ipady=2)
+        
+        # Response area with better styling
+        response_frame = ttk.Frame(proxy_frame, style='Main.TFrame')
+        response_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        
+        ttk.Label(response_frame, 
+                 text="Response:", 
+                 font=('Helvetica', 10)).pack(anchor='w', pady=5)
+        
+        # Custom style for response area
+        self.response_area = scrolledtext.ScrolledText(
+            response_frame,
+            height=20,
+            font=('Consolas', 10),
+            bg='white',
+            wrap=tk.WORD
+        )
+        self.response_area.pack(fill='both', expand=True)
         
         # Admin tab
-        self.admin_frame = ttk.Frame(self.notebook)
+        self.admin_frame = ttk.Frame(self.notebook, style='Main.TFrame')
         self.setup_admin_frame()
         # Admin tab will be added only for admin users
+        
+        # Bind Enter key to send request
+        url_entry.bind('<Return>', lambda e: self.send_request())
         
     def login(self):
         username = self.username_var.get()
@@ -198,49 +300,118 @@ class ProxyGUI:
                 f"http://localhost:{self.proxy_port}/?url={url}",
                 headers={"Authorization": self.auth_header}
             )
-            self.response_area.delete(1.0, tk.END)
-            self.response_area.insert(tk.END, response.text)
+            
+            if response.status_code == 200:
+                self.update_response_area(response.text)
+            else:
+                self.update_response_area(
+                    f"Error {response.status_code}: {response.text}",
+                    error=True
+                )
+                
         except requests.exceptions.ConnectionError:
-            messagebox.showerror("Error", "Failed to connect to proxy server")
+            self.update_response_area(
+                "Error: Failed to connect to proxy server",
+                error=True
+            )
     
     def setup_admin_frame(self):
-        # Left side - User List
-        list_frame = ttk.Frame(self.admin_frame)
-        list_frame.pack(side='left', fill='both', expand=True, padx=5, pady=5)
+        # Header
+        ttk.Label(self.admin_frame, 
+                 text="User Management", 
+                 style='Header.TLabel').pack(pady=10)
         
-        ttk.Label(list_frame, text="Users:").pack(anchor='w')
-        self.user_list = ttk.Treeview(list_frame, columns=('Username', 'Role'), 
-                                    show='headings', height=10)
+        # Container for list and form
+        content_frame = ttk.Frame(self.admin_frame, style='Main.TFrame')
+        content_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        
+        # Left side - User List
+        list_frame = ttk.Frame(content_frame, style='Main.TFrame')
+        list_frame.pack(side='left', fill='both', expand=True, padx=(0, 10))
+        
+        list_header = ttk.Frame(list_frame, style='Main.TFrame')
+        list_header.pack(fill='x', pady=(0, 5))
+        
+        ttk.Label(list_header, 
+                 text="Users", 
+                 font=('Helvetica', 12, 'bold')).pack(side='left')
+        
+        ttk.Button(list_header,
+                  text="🔄 Refresh",
+                  command=self.refresh_user_list,
+                  style='Accent.TButton').pack(side='right')
+        
+        # Styled Treeview
+        self.style.configure('Custom.Treeview',
+                           font=('Helvetica', 10),
+                           rowheight=25)
+        self.style.configure('Custom.Treeview.Heading',
+                           font=('Helvetica', 10, 'bold'))
+        
+        self.user_list = ttk.Treeview(list_frame,
+                                     columns=('Username', 'Role'),
+                                     show='headings',
+                                     height=12,
+                                     style='Custom.Treeview')
+        
         self.user_list.heading('Username', text='Username')
         self.user_list.heading('Role', text='Role')
-        self.user_list.pack(fill='both', expand=True)
+        self.user_list.column('Username', width=150)
+        self.user_list.column('Role', width=100)
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.user_list.yview)
+        self.user_list.configure(yscrollcommand=scrollbar.set)
+        
+        self.user_list.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
         
         # Right side - Add User Form
-        form_frame = ttk.Frame(self.admin_frame)
-        form_frame.pack(side='right', fill='y', padx=5, pady=5)
+        form_frame = ttk.Frame(content_frame, style='Main.TFrame')
+        form_frame.pack(side='right', fill='y', padx=(10, 0))
         
-        ttk.Label(form_frame, text="Add New User", font=('Arial', 12, 'bold')).pack(pady=10)
+        ttk.Label(form_frame,
+                 text="Add New User",
+                 font=('Helvetica', 12, 'bold')).pack(pady=(0, 20))
         
-        ttk.Label(form_frame, text="Username:").pack(anchor='w')
+        # Username field
+        ttk.Label(form_frame,
+                 text="Username:",
+                 font=('Helvetica', 10)).pack(anchor='w', pady=(0, 5))
         self.new_username = tk.StringVar()
-        ttk.Entry(form_frame, textvariable=self.new_username).pack(fill='x', pady=2)
+        ttk.Entry(form_frame,
+                 textvariable=self.new_username,
+                 width=25,
+                 style='URL.TEntry').pack(fill='x', pady=(0, 15))
         
-        ttk.Label(form_frame, text="Password:").pack(anchor='w')
+        # Password field
+        ttk.Label(form_frame,
+                 text="Password:",
+                 font=('Helvetica', 10)).pack(anchor='w', pady=(0, 5))
         self.new_password = tk.StringVar()
-        ttk.Entry(form_frame, textvariable=self.new_password, show="*").pack(fill='x', pady=2)
+        ttk.Entry(form_frame,
+                 textvariable=self.new_password,
+                 show="•",
+                 width=25,
+                 style='URL.TEntry').pack(fill='x', pady=(0, 15))
         
-        ttk.Label(form_frame, text="Role:").pack(anchor='w')
+        # Role selection
+        ttk.Label(form_frame,
+                 text="Role:",
+                 font=('Helvetica', 10)).pack(anchor='w', pady=(0, 5))
         self.new_role = tk.StringVar(value="Student")
-        role_combo = ttk.Combobox(form_frame, textvariable=self.new_role, 
-                                values=["Admin", "Student", "Teacher"])
-        role_combo.pack(fill='x', pady=2)
+        role_combo = ttk.Combobox(form_frame,
+                                textvariable=self.new_role,
+                                values=["Admin", "Student", "Teacher"],
+                                state='readonly',
+                                width=23)
+        role_combo.pack(fill='x', pady=(0, 20))
         
-        ttk.Button(form_frame, text="Add User", 
-                  command=self.add_user).pack(fill='x', pady=10)
-        
-        # Refresh button
-        ttk.Button(form_frame, text="Refresh List", 
-                  command=self.refresh_user_list).pack(fill='x', pady=5)
+        # Add user button
+        ttk.Button(form_frame,
+                  text="Add User",
+                  command=self.add_user,
+                  style='Accent.TButton').pack(fill='x', ipady=5)
 
     def refresh_user_list(self):
         # Clear existing items
@@ -300,7 +471,42 @@ class ProxyGUI:
             self.stop_server()
         self.root.destroy()
 
+    def update_status(self):
+        """Update the status bar with current information"""
+        if self.server_running:
+            status = f"Server Status: Running on port {self.proxy_port} • "
+            self.server_status.configure(foreground='green')
+        else:
+            status = "Server Status: Stopped • "
+            self.server_status.configure(foreground='red')
+            
+        # Add timestamp
+        status += datetime.now().strftime("%H:%M:%S")
+        self.status_bar.configure(text=status)
+        
+        # Schedule next update
+        self.root.after(1000, self.update_status)
+    
+    def update_response_area(self, text, error=False):
+        """Update response area with formatted text"""
+        self.response_area.delete(1.0, tk.END)
+        
+        # Add timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.response_area.insert(tk.END, f"[{timestamp}]\n", "timestamp")
+        
+        # Format and insert the response
+        if error:
+            self.response_area.tag_configure("error", foreground="red")
+            self.response_area.insert(tk.END, text, "error")
+        else:
+            self.response_area.insert(tk.END, text)
+            
+        self.response_area.see(tk.END)
+    
     def run(self):
+        # Configure text tags
+        self.response_area.tag_configure("timestamp", foreground="blue")
         self.root.mainloop()
 
 if __name__ == "__main__":
