@@ -32,8 +32,8 @@ It forwards client requests to an origin server, caches the responses, and serve
 1. Clone the repository
 
 ```bash
-git clone https://github.com/eniolaomotee/Caching_Proxy_Server.git
-cd caching-proxy-server
+git clone https://github.com/tripathipalak267-ai/Caching_Proxy_Server.git
+cd Caching_Proxy_Server
 ```
 
 2. Create and activate a Virtual environment
