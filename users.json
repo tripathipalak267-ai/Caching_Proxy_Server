@@ -1,0 +1,30 @@
+{
+  "users": [
+    {
+      "username": "ashk",
+      "password": "123",
+      "role": "Student"
+    },
+    {
+      "username": "tripa",
+      "password": "121",
+      "role": "Student"
+    },
+    {
+      "username": "nischay",
+      "password": "nischay",
+      "role": "Faculty"
+    },
+    
+    {
+      "username": "Pranjal",
+      "password": "pranjal",
+      "role": "Faculty"
+    },
+    {
+      "username": "garv",
+      "password": "garv",
+      "role": "Admin"
+    }
+  ]
+}
