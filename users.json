@@ -1,6 +1,11 @@
 {
   "users": [
     {
+      "username": "user",
+      "password": "pass",
+      "role": "Student"
+    },
+    {
       "username": "ashk",
       "password": "123",
       "role": "Student"
