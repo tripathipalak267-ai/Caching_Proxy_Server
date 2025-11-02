@@ -1,0 +1,13 @@
+{
+  "Student": [
+    "facebook",
+    "instagram",
+    "youtube",
+    "netflix"
+  ],
+  "Faculty": [
+    "gaming",
+    "tiktok"
+  ],
+  "Admin": []
+}
