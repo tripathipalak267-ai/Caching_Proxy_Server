@@ -16,6 +16,10 @@ class ProxyGUI:
         self.root.title("Caching Proxy Server")
         self.root.geometry("1000x700")
         
+        # Configure style for entry fields
+        self.style = ttk.Style()
+        self.style.configure('URL.TEntry', padding=(5, 5))  # Add padding to entries
+        
         # Configure colors and styles
         self.style = ttk.Style()
         self.bg_color = "#f0f0f0"
@@ -63,6 +67,36 @@ class ProxyGUI:
         # Update status bar periodically
         self.update_status()
         
+    def toggle_password_visibility(self, entry_widget, button):
+        """Toggle password visibility between show and hide"""
+        if entry_widget.cget('show') == '':
+            entry_widget.configure(show='•')
+            button.configure(text='👁')
+        else:
+            entry_widget.configure(show='')
+            button.configure(text='👁️‍🗨️')
+    
+    def create_password_frame(self, parent, password_var, width=30):
+        """Create a password entry with show/hide toggle"""
+        container_frame = ttk.Frame(parent, style='Main.TFrame')
+        
+        # Create password entry
+        password_entry = ttk.Entry(container_frame,
+                                 textvariable=password_var,
+                                 show="•",
+                                 width=width,
+                                 style='URL.TEntry')
+        password_entry.pack(side='left', expand=True, fill='x')
+        
+        # Create toggle button with fixed width
+        toggle_btn = ttk.Button(container_frame,
+                              text='👁',
+                              width=3,
+                              command=lambda: self.toggle_password_visibility(password_entry, toggle_btn))
+        toggle_btn.pack(side='left', padx=(5, 0))
+        
+        return container_frame  # Return the frame instead of the entry
+    
     def setup_login_frame(self):
         # Center the login form
         center_frame = ttk.Frame(self.login_frame, style='Main.TFrame')
@@ -78,27 +112,29 @@ class ProxyGUI:
         form_frame.pack(padx=40, pady=20)
         
         # Username
-        ttk.Label(form_frame, 
+        username_frame = ttk.Frame(form_frame, style='Main.TFrame')
+        username_frame.pack(fill='x', pady=(0, 10))
+        
+        ttk.Label(username_frame, 
                  text="Username:", 
-                 font=('Helvetica', 10)).pack(anchor='w', pady=(0, 5))
+                 font=('Helvetica', 10)).pack(side='left', pady=5)
         self.username_var = tk.StringVar()
-        username_entry = ttk.Entry(form_frame, 
+        username_entry = ttk.Entry(username_frame, 
                                  textvariable=self.username_var,
                                  width=30,
                                  style='URL.TEntry')
-        username_entry.pack(pady=(0, 15))
+        username_entry.pack(side='right', padx=(10, 0), expand=True, fill='x')
         
-        # Password
-        ttk.Label(form_frame, 
+        # Password with show/hide toggle
+        password_label_frame = ttk.Frame(form_frame, style='Main.TFrame')
+        password_label_frame.pack(fill='x', pady=(0, 5))
+        ttk.Label(password_label_frame, 
                  text="Password:", 
-                 font=('Helvetica', 10)).pack(anchor='w', pady=(0, 5))
+                 font=('Helvetica', 10)).pack(side='left')
+                 
         self.password_var = tk.StringVar()
-        password_entry = ttk.Entry(form_frame, 
-                                 textvariable=self.password_var,
-                                 show="•",
-                                 width=30,
-                                 style='URL.TEntry')
-        password_entry.pack(pady=(0, 20))
+        password_frame = self.create_password_frame(form_frame, self.password_var)
+        password_frame.pack(fill='x', pady=(0, 15))
         
         # Login button
         login_btn = ttk.Button(form_frame, 
@@ -107,9 +143,12 @@ class ProxyGUI:
                               style='Accent.TButton')
         login_btn.pack(pady=10, ipadx=20, ipady=5)
         
+        # Store password entry widget for binding
+        self.password_entry = password_frame.winfo_children()[0]  # Get the Entry widget from the frame
+        
         # Bind Enter key to login
-        username_entry.bind('<Return>', lambda e: password_entry.focus())
-        password_entry.bind('<Return>', lambda e: self.login())
+        username_entry.bind('<Return>', lambda e: self.password_entry.focus())
+        self.password_entry.bind('<Return>', lambda e: self.login())
         
     def setup_main_frame(self):
         # Notebook for tabs
@@ -127,22 +166,36 @@ class ProxyGUI:
                  text="Proxy Server Control", 
                  style='Header.TLabel').pack(pady=10)
         
-        # Server control with status indicator
+        # Server control with status indicator and logout
         control_frame = ttk.Frame(proxy_frame, style='Main.TFrame')
         control_frame.pack(fill='x', padx=20, pady=10)
         
-        self.server_btn = ttk.Button(control_frame, 
+        # Left side controls
+        left_controls = ttk.Frame(control_frame, style='Main.TFrame')
+        left_controls.pack(side='left')
+        
+        self.server_btn = ttk.Button(left_controls, 
                                    text="Start Server",
                                    command=self.toggle_server,
                                    style='Accent.TButton')
         self.server_btn.pack(side='left', padx=5, ipadx=10, ipady=2)
         
-        self.server_status = ttk.Label(control_frame,
+        self.server_status = ttk.Label(left_controls,
                                      text="●",
                                      foreground='gray',
                                      font=('Helvetica', 16),
                                      style='Status.TLabel')
         self.server_status.pack(side='left', padx=5)
+        
+        # Right side controls (logout)
+        right_controls = ttk.Frame(control_frame, style='Main.TFrame')
+        right_controls.pack(side='right')
+        
+        self.logout_btn = ttk.Button(right_controls,
+                                   text="Logout",
+                                   command=self.logout,
+                                   style='Accent.TButton')
+        self.logout_btn.pack(side='right', padx=5, ipadx=10, ipady=2)
         
         # URL input with modern styling
         url_frame = ttk.Frame(proxy_frame, style='Main.TFrame')
@@ -289,11 +342,39 @@ class ProxyGUI:
                 self.server_btn.config(text="Start Server")
                 messagebox.showinfo("Success", "Server stopped successfully")
     
+    def logout(self):
+        """Handle user logout"""
+        if messagebox.askyesno("Logout", "Are you sure you want to logout?"):
+            # Clear sensitive data
+            self.auth_header = None
+            self.username_var.set("")
+            self.password_var.set("")
+            
+            # Switch back to login frame
+            self.main_frame.pack_forget()
+            self.login_frame.pack(fill='both', expand=True)
+            
+            # Clear response area and URL
+            self.response_area.delete(1.0, tk.END)
+            self.url_var.set("")
+    
+    def normalize_url(self, url):
+        """Add protocol if missing"""
+        if not url:
+            return url
+        if not url.startswith(('http://', 'https://')):
+            return f'https://{url}'
+        return url
+    
     def send_request(self):
         url = self.url_var.get()
         if not url:
             messagebox.showerror("Error", "Please enter a URL")
             return
+            
+        # Normalize URL
+        url = self.normalize_url(url)
+        self.url_var.set(url)  # Update the entry with normalized URL
             
         try:
             response = requests.get(
@@ -384,16 +465,12 @@ class ProxyGUI:
                  width=25,
                  style='URL.TEntry').pack(fill='x', pady=(0, 15))
         
-        # Password field
+        # Password field with show/hide toggle
         ttk.Label(form_frame,
                  text="Password:",
                  font=('Helvetica', 10)).pack(anchor='w', pady=(0, 5))
         self.new_password = tk.StringVar()
-        ttk.Entry(form_frame,
-                 textvariable=self.new_password,
-                 show="•",
-                 width=25,
-                 style='URL.TEntry').pack(fill='x', pady=(0, 15))
+        self.create_password_frame(form_frame, self.new_password, width=25)
         
         # Role selection
         ttk.Label(form_frame,
