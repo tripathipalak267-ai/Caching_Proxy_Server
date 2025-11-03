@@ -688,7 +688,8 @@ class ProxyGUI:
                  text="Password:",
                  font=('Helvetica', 10)).pack(anchor='w', pady=(0, 5))
         self.new_password = tk.StringVar()
-        self.create_password_frame(form_frame, self.new_password, width=25)
+        password_frame = self.create_password_frame(form_frame, self.new_password, width=25)
+        password_frame.pack(fill='x', pady=(0, 15))
         
         # Role selection
         ttk.Label(form_frame,
@@ -697,7 +698,7 @@ class ProxyGUI:
         self.new_role = tk.StringVar(value="Student")
         role_combo = ttk.Combobox(form_frame,
                                 textvariable=self.new_role,
-                                values=["Admin", "Student", "Teacher"],
+                                values=["Admin", "Student", "Faculty"],
                                 state='readonly',
                                 width=23)
         role_combo.pack(fill='x', pady=(0, 20))

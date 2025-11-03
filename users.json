@@ -20,7 +20,6 @@
       "password": "nischay",
       "role": "Faculty"
     },
-    
     {
       "username": "Pranjal",
       "password": "pranjal",
@@ -29,6 +28,11 @@
     {
       "username": "garv",
       "password": "garv",
+      "role": "Admin"
+    },
+    {
+      "username": "admin",
+      "password": "admin",
       "role": "Admin"
     }
   ]
