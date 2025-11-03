@@ -87,13 +87,16 @@ This starts the proxy on http://localhost:3001.
 
 2. Make requests via proxy:
 ```bash
-curl.exe -u user:pass "http://localhost:3001/?url=<OriginURL>"
+curl.exe -u user:pass "http://localhost:3001/?url=<OriginURL>" # On Windows
+curl -u user:pass "http://localhost:3001/?url=<OriginURL>" # On macOS/Linux
+
 ```
 Example: `curl.exe -u user:pass "http://localhost:3001/?url=https://api.example.com/data"`
 
 3. View analytics:
 ```bash
-curl.exe -u user:pass "http://localhost:3001/analytics"
+curl.exe -u user:pass "http://localhost:3001/analytics" # On Windows
+curl -u user:pass "http://localhost:3001/analytics" # On macos/Linux
 ```
 Shows cache hits, misses, and total requests.
 
