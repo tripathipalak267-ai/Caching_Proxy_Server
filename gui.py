@@ -12,7 +12,8 @@ from datetime import datetime
 
 class ProxyGUI:
     def __init__(self):
-        self.root = ThemedTk(theme="arc")  # Modern theme
+        # Use a modern themed window and custom colors
+        self.root = ThemedTk(theme="arc")
         self.root.title("Caching Proxy Server")
         self.root.geometry("1000x700")
         
@@ -22,8 +23,11 @@ class ProxyGUI:
         
         # Configure colors and styles
         self.style = ttk.Style()
-        self.bg_color = "#f0f0f0"
-        self.accent_color = "#2196F3"
+        # Light theme palette
+        self.bg_color = "#f7fafc"   # very light gray
+        self.accent_color = "#2563eb"  # blue accent
+        self.card_color = "#ffffff"  # card white
+        self.text_color = "#0f1724"  # dark text
         self.root.configure(bg=self.bg_color)
         
         # Configure styles
@@ -31,11 +35,13 @@ class ProxyGUI:
         self.style.configure('Header.TLabel', 
                            font=('Helvetica', 16, 'bold'),
                            padding=10,
-                           background=self.bg_color)
+                           background=self.bg_color,
+                           foreground=self.text_color)
         self.style.configure('Status.TLabel',
                            font=('Helvetica', 10),
                            padding=5,
-                           background=self.bg_color)
+                           background=self.bg_color,
+                           foreground=self.text_color)
         self.style.configure('URL.TEntry', padding=5)
         
         self.server_running = False
@@ -54,11 +60,12 @@ class ProxyGUI:
         # Create main frame (initially hidden)
         self.main_frame = ttk.Frame(self.root, style='Main.TFrame')
         self.setup_main_frame()
-        
+
         # Create status bar
-        self.status_bar = ttk.Label(self.root, 
-                                  text="Server Status: Starting...", 
-                                  style='Status.TLabel')
+        self.status_bar = ttk.Label(self.root,
+                                  text="Server Status: Starting...",
+                                  style='Status.TLabel',
+                                  anchor='w')
         self.status_bar.pack(side='bottom', fill='x')
         
         # Bind window close event
@@ -156,91 +163,244 @@ class ProxyGUI:
         self.style.configure('TNotebook.Tab', padding=[12, 4], font=('Helvetica', 10))
         self.notebook = ttk.Notebook(self.main_frame)
         self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
-        
+
         # Proxy tab
         proxy_frame = ttk.Frame(self.notebook, style='Main.TFrame')
         self.notebook.add(proxy_frame, text='🌐 Proxy')
-        
+
         # Header
-        ttk.Label(proxy_frame, 
-                 text="Proxy Server Control", 
+        ttk.Label(proxy_frame,
+                 text="Proxy Server Control",
                  style='Header.TLabel').pack(pady=10)
-        
+
         # Server control with status indicator and logout
         control_frame = ttk.Frame(proxy_frame, style='Main.TFrame')
         control_frame.pack(fill='x', padx=20, pady=10)
-        
+
         # Left side controls
         left_controls = ttk.Frame(control_frame, style='Main.TFrame')
         left_controls.pack(side='left')
-        
-        self.server_btn = ttk.Button(left_controls, 
+
+        self.server_btn = ttk.Button(left_controls,
                                    text="Start Server",
                                    command=self.toggle_server,
                                    style='Accent.TButton')
         self.server_btn.pack(side='left', padx=5, ipadx=10, ipady=2)
-        
+
         self.server_status = ttk.Label(left_controls,
                                      text="●",
                                      foreground='gray',
                                      font=('Helvetica', 16),
                                      style='Status.TLabel')
         self.server_status.pack(side='left', padx=5)
-        
+
         # Right side controls (logout)
         right_controls = ttk.Frame(control_frame, style='Main.TFrame')
         right_controls.pack(side='right')
-        
+
         self.logout_btn = ttk.Button(right_controls,
                                    text="Logout",
                                    command=self.logout,
                                    style='Accent.TButton')
         self.logout_btn.pack(side='right', padx=5, ipadx=10, ipady=2)
-        
-        # URL input with modern styling
-        url_frame = ttk.Frame(proxy_frame, style='Main.TFrame')
-        url_frame.pack(fill='x', padx=20, pady=10)
-        
-        ttk.Label(url_frame, 
-                 text="URL:", 
+
+        # Main content: left = controls + response, right = history/analytics
+        main_content = ttk.Frame(proxy_frame, style='Main.TFrame')
+        main_content.pack(fill='both', expand=True, padx=20, pady=10)
+
+        left_column = ttk.Frame(main_content, style='Main.TFrame')
+        left_column.pack(side='left', fill='both', expand=True)
+
+        right_column = ttk.Frame(main_content, style='Main.TFrame')
+        right_column.pack(side='right', fill='y')
+
+        # URL input with modern styling (placed in left column)
+        url_frame = ttk.Frame(left_column, style='Main.TFrame')
+        url_frame.pack(fill='x', pady=(0, 10))
+
+        ttk.Label(url_frame,
+                 text="URL:",
                  font=('Helvetica', 10)).pack(side='left', padx=5)
         self.url_var = tk.StringVar()
-        url_entry = ttk.Entry(url_frame, 
+        url_entry = ttk.Entry(url_frame,
                             textvariable=self.url_var,
                             style='URL.TEntry')
         url_entry.pack(side='left', fill='x', expand=True, padx=5)
-        
-        send_btn = ttk.Button(url_frame, 
+
+        send_btn = ttk.Button(url_frame,
                             text="Send Request",
                             command=self.send_request,
                             style='Accent.TButton')
         send_btn.pack(side='left', padx=5, ipadx=10, ipady=2)
-        
-        # Response area with better styling
-        response_frame = ttk.Frame(proxy_frame, style='Main.TFrame')
-        response_frame.pack(fill='both', expand=True, padx=20, pady=10)
-        
-        ttk.Label(response_frame, 
-                 text="Response:", 
+
+        # Response area with better styling (on left column)
+        response_frame = ttk.Frame(left_column, style='Main.TFrame')
+        response_frame.pack(fill='both', expand=True)
+
+        ttk.Label(response_frame,
+                 text="Response:",
                  font=('Helvetica', 10)).pack(anchor='w', pady=5)
-        
-        # Custom style for response area
+
+        # Top row: status badges (cache hit/miss) and blocked notice
+        top_badge_frame = ttk.Frame(response_frame, style='Main.TFrame')
+        top_badge_frame.pack(fill='x', pady=(0, 8))
+
+        self.cache_status_var = tk.StringVar(value="Cache: -")
+        self.cache_status_label = ttk.Label(top_badge_frame, textvariable=self.cache_status_var, font=('Helvetica', 10, 'bold'))
+        self.cache_status_label.pack(side='left', padx=(0, 10))
+
+        # Blocked notice (hidden by default)
+        self.blocked_var = tk.StringVar(value="")
+        self.blocked_label = ttk.Label(top_badge_frame, textvariable=self.blocked_var, font=('Helvetica', 10, 'bold'))
+        self.blocked_label.pack(side='left')
+
+        # Custom style for response area (text)
         self.response_area = scrolledtext.ScrolledText(
             response_frame,
             height=20,
             font=('Consolas', 10),
-            bg='white',
+            bg=self.card_color,
+            fg=self.text_color,
+            insertbackground=self.text_color,
             wrap=tk.WORD
         )
         self.response_area.pack(fill='both', expand=True)
-        
+
+        # Right column: history and analytics
+        # History list
+        ttk.Label(right_column, text="History", font=('Helvetica', 12, 'bold'), background=self.bg_color, foreground=self.text_color).pack(anchor='w', pady=(0, 5))
+        self.history_list = tk.Listbox(
+            right_column,
+            height=12,
+            bg=self.card_color,
+            fg=self.text_color,
+            selectbackground=self.accent_color,
+            selectforeground='white',
+            highlightthickness=1,
+            relief='solid'
+        )
+        self.history_list.pack(fill='both', padx=(0, 10), pady=(0, 10))
+        self.history_list.bind('<Double-Button-1>', lambda e: self.load_selected_history())
+
+        # Analytics panel
+        ttk.Label(right_column, text='Analytics', font=('Helvetica', 12, 'bold'), background=self.bg_color, foreground=self.text_color).pack(anchor='w')
+        self.analytics_frame = ttk.Frame(right_column, style='Main.TFrame')
+        self.analytics_frame.pack(fill='x', pady=(5, 10))
+
+        self.requests_var = tk.StringVar(value='Requests: 0')
+        self.hits_var = tk.StringVar(value='Cache Hits: 0')
+        self.misses_var = tk.StringVar(value='Cache Misses: 0')
+
+        ttk.Label(self.analytics_frame, textvariable=self.requests_var, background=self.bg_color, foreground=self.text_color).pack(anchor='w')
+        ttk.Label(self.analytics_frame, textvariable=self.hits_var, background=self.bg_color, foreground=self.text_color).pack(anchor='w')
+        ttk.Label(self.analytics_frame, textvariable=self.misses_var, background=self.bg_color, foreground=self.text_color).pack(anchor='w')
+
+    # (Clear Cache button removed)
+
         # Admin tab
         self.admin_frame = ttk.Frame(self.notebook, style='Main.TFrame')
         self.setup_admin_frame()
-        # Admin tab will be added only for admin users
-        
+
         # Bind Enter key to send request
         url_entry.bind('<Return>', lambda e: self.send_request())
+
+    def add_to_history(self, url):
+        if not hasattr(self, 'history'):
+            self.history = []
+        # Avoid duplicates: move to top
+        if url in self.history:
+            self.history.remove(url)
+        self.history.insert(0, url)
+        # Keep to 50 entries
+        self.history = self.history[:50]
+        # Refresh listbox
+        self.history_list.delete(0, tk.END)
+        for u in self.history:
+            self.history_list.insert(tk.END, u)
+
+    def load_selected_history(self):
+        sel = self.history_list.curselection()
+        if not sel:
+            return
+        url = self.history_list.get(sel[0])
+        self.url_var.set(url)
+        self.send_request()
+
+    def clear_cache(self):
+        # Call server endpoint to clear cache. Only Admins allowed; server enforces.
+        # Provide immediate UI feedback
+        try:
+            # disable the button while request is in progress
+            try:
+                self.clear_cache_btn.configure(state='disabled')
+            except Exception:
+                pass
+            self.status_bar.configure(text="Clearing cache...")
+
+            resp = requests.post(
+                f"http://localhost:{self.proxy_port}/clear_cache",
+                headers={"Authorization": self.auth_header},
+                timeout=5
+            )
+
+            if resp.status_code == 200:
+                try:
+                    js = resp.json()
+                    before = js.get('before')
+                    after = js.get('after')
+                    messagebox.showinfo("Success", f"Cache cleared successfully (before={before}, after={after})")
+                except Exception:
+                    messagebox.showinfo("Success", "Cache cleared successfully")
+                # Refresh analytics after clearing
+                self.refresh_analytics()
+                # Reset cache badge
+                self.cache_status_var.set("Cache: -")
+            else:
+                # show server response text if available
+                try:
+                    body = resp.text
+                except Exception:
+                    body = ''
+                messagebox.showerror("Error", f"Failed to clear cache: {resp.status_code} {body}")
+
+        except requests.exceptions.Timeout:
+            messagebox.showerror("Error", "Clear cache request timed out")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Error", "Failed to connect to proxy server")
+        except Exception as e:
+            # catch-all — surface any unexpected errors
+            messagebox.showerror("Error", f"Unexpected error: {e}")
+        finally:
+            # Restore button state: enabled only if user is admin
+            try:
+                users_db = load_users()
+                uname = self.username_var.get()
+                user = users_db.get(uname)
+                if user and user.get('role') == 'Admin':
+                    self.clear_cache_btn.configure(state='normal')
+                else:
+                    self.clear_cache_btn.configure(state='disabled')
+            except Exception:
+                try:
+                    self.clear_cache_btn.configure(state='normal')
+                except Exception:
+                    pass
+            # restore status bar (will be updated by update_status shortly)
+            self.update_status()
+
+    def refresh_analytics(self):
+        # Fetch analytics from server
+        try:
+            resp = requests.get(f"http://localhost:{self.proxy_port}/cache_stats", headers={"Authorization": self.auth_header})
+            if resp.status_code == 200:
+                js = resp.json()
+                an = js.get('analytics', {})
+                self.requests_var.set(f"Requests: {an.get('requests', 0)}")
+                self.hits_var.set(f"Cache Hits: {an.get('cache_hits', 0)}")
+                self.misses_var.set(f"Cache Misses: {an.get('cache_misses', 0)}")
+        except Exception:
+            # Ignore network errors here
+            pass
         
     def login(self):
         username = self.username_var.get()
@@ -281,6 +441,22 @@ class ProxyGUI:
                 if user and user.get("role") == "Admin":
                     self.notebook.add(self.admin_frame, text='User Management')
                     self.refresh_user_list()
+                    # Enable clear cache for admins
+                    try:
+                        self.clear_cache_btn.configure(state='normal')
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        self.clear_cache_btn.configure(state='disabled')
+                    except Exception:
+                        pass
+
+                # Refresh analytics panel
+                try:
+                    self.refresh_analytics()
+                except Exception:
+                    pass
             else:
                 messagebox.showerror("Error", "Invalid credentials")
         except requests.exceptions.ConnectionError:
@@ -381,9 +557,51 @@ class ProxyGUI:
                 f"http://localhost:{self.proxy_port}/?url={url}",
                 headers={"Authorization": self.auth_header}
             )
-            
+
+            # Reset blocked badge
+            self.blocked_var.set("")
+            self.blocked_label.configure(foreground=self.text_color)
+
+            # Read cache header if present
+            cache_header = response.headers.get('X-Cache')
+            if cache_header:
+                self.cache_status_var.set(f"Cache: {cache_header}")
+                if cache_header.upper() == 'HIT':
+                    self.cache_status_label.configure(foreground='#2ecc71')  # green
+                else:
+                    self.cache_status_label.configure(foreground=self.accent_color)
+            else:
+                # Unknown -> clear
+                self.cache_status_var.set("Cache: -")
+                self.cache_status_label.configure(foreground=self.text_color)
+
+            # If blocked, server returns 403 with JSON payload
+            if response.status_code == 403:
+                try:
+                    js = response.json()
+                    reason = js.get('reason') or js.get('error') or 'Access Denied'
+                    blocked_url = js.get('blocked_url', url)
+                    self.blocked_var.set(f"ACCESS DENIED: {blocked_url} — {reason}")
+                    # Make blocked label prominent
+                    self.blocked_label.configure(foreground='#ff4d4f')
+                    # Clear response area (blocked message should be separate)
+                    self.update_response_area("", clear=True)
+                    return
+                except Exception:
+                    # Fall through to show error text
+                    pass
+
             if response.status_code == 200:
                 self.update_response_area(response.text)
+                # Add to history and refresh analytics
+                try:
+                    self.add_to_history(url)
+                except Exception:
+                    pass
+                try:
+                    self.refresh_analytics()
+                except Exception:
+                    pass
             else:
                 self.update_response_area(
                     f"Error {response.status_code}: {response.text}",
@@ -561,20 +779,26 @@ class ProxyGUI:
         status += datetime.now().strftime("%H:%M:%S")
         self.status_bar.configure(text=status)
         
-        # Schedule next update
+        # Schedule next update and periodically refresh analytics
         self.root.after(1000, self.update_status)
+        # Update analytics every 5 seconds
+        self.root.after(5000, self.refresh_analytics)
     
-    def update_response_area(self, text, error=False):
+    def update_response_area(self, text, error=False, clear=False):
         """Update response area with formatted text"""
+        if clear:
+            self.response_area.delete(1.0, tk.END)
+            return
+
         self.response_area.delete(1.0, tk.END)
         
-        # Add timestamp
+    # Add timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.response_area.insert(tk.END, f"[{timestamp}]\n", "timestamp")
         
         # Format and insert the response
         if error:
-            self.response_area.tag_configure("error", foreground="red")
+            self.response_area.tag_configure("error", foreground="#ff6b6b")
             self.response_area.insert(tk.END, text, "error")
         else:
             self.response_area.insert(tk.END, text)
@@ -583,7 +807,7 @@ class ProxyGUI:
     
     def run(self):
         # Configure text tags
-        self.response_area.tag_configure("timestamp", foreground="blue")
+        self.response_area.tag_configure("timestamp", foreground="#9fb3ff")
         self.root.mainloop()
 
 if __name__ == "__main__":
