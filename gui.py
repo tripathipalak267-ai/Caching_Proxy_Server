@@ -471,9 +471,16 @@ class ProxyGUI:
             self.password_var.set("")
             self.current_username = None
             
-            self.main_frame.pack_forget()
             if hasattr(self, 'user_info'):
                 self.user_info.config(text="Not Logged In")
+            
+            if hasattr(self, 'admin_frame'):
+                for i in range(len(self.notebook.tabs())):
+                    if self.notebook.tab(i, "text") == "User Management":
+                        self.notebook.forget(i)
+                        break
+
+            self.main_frame.pack_forget()
             self.login_frame.pack(fill='both', expand=True)
            
             self.response_area.delete(1.0, tk.END)
