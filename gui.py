@@ -93,7 +93,6 @@ class ProxyGUI:
         return container_frame 
     
     def setup_login_frame(self):
-        # Center the login form
         center_frame = ttk.Frame(self.login_frame, style='Main.TFrame')
         center_frame.place(relx=0.5, rely=0.5, anchor='center')
         
@@ -170,6 +169,16 @@ class ProxyGUI:
                                      font=('Helvetica', 16),
                                      style='Status.TLabel')
         self.server_status.pack(side='left', padx=5)
+
+        center_controls = ttk.Frame(control_frame, style='Main.TFrame')
+        center_controls.pack(side='left', expand=True, fill='both')
+
+        self.user_info = ttk.Label(center_controls,
+                                text="Not Logged In",
+                                font=('Helvetica', 12, 'bold'),
+                                anchor='center',
+                                style='Info.TLabel')
+        self.user_info.pack(expand=True)
 
         right_controls = ttk.Frame(control_frame, style='Main.TFrame')
         right_controls.pack(side='right')
@@ -377,6 +386,8 @@ class ProxyGUI:
                 self.server_btn.config(text="Stop Server")
                 self.current_user_role = user.get("role") if user else None
                 self.current_username = username
+                if hasattr(self, 'user_info'):
+                    self.user_info.config(text=f"{self.current_username} – {self.current_user_role}")
                 if user and user.get("role") == "Admin":
                     self.notebook.add(self.admin_frame, text='User Management')
                     self.refresh_user_list()
@@ -461,6 +472,8 @@ class ProxyGUI:
             self.current_username = None
             
             self.main_frame.pack_forget()
+            if hasattr(self, 'user_info'):
+                self.user_info.config(text="Not Logged In")
             self.login_frame.pack(fill='both', expand=True)
            
             self.response_area.delete(1.0, tk.END)
